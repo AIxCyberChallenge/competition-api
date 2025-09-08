@@ -1,0 +1,274 @@
+definitions:
+  types.ArchivedFile:
+    enum:
+      - fuzz.out
+      - fuzz.out_base_repo
+      - pov_trigger
+      - patch
+      - unstripped_head_tarball
+      - unstripped_base_tarball
+      - diff_tarball
+      - stripped_repo_tarball
+      - unstripped_repo_tarball
+      - oss_fuzz_tarball
+      - sarif_submission
+      - sarif_broadcast
+      - freeform_pov
+    type: string
+    x-enum-varnames:
+      - FileFuzzOutHead
+      - FileFuzzOutBase
+      - FilePOVTrigger
+      - FilePatch
+      - FileUnstrippedHeadTarball
+      - FileUnstrippedBaseTarball
+      - FileDiffTarball
+      - FileStrippedRepoTarball
+      - FileUnstrippedRepoTarball
+      - FileOSSFuzzTarball
+      - FileSARIFSubmission
+      - FileSARIFBroadcast
+      - FileFreeformPOV
+  types.Blob:
+    properties:
+      object_name:
+        type: string
+      presigned_url:
+        type: string
+    type: object
+  types.Error:
+    properties:
+      fields:
+        additionalProperties:
+          type: string
+        type: object
+      message:
+        type: string
+    required:
+      - message
+    type: object
+  types.JobArgs:
+    properties:
+      architecture:
+        type: string
+      cache_key:
+        type: string
+      cpus:
+        type: integer
+      diff_tarball_url:
+        type: string
+      engine:
+        type: string
+      focus:
+        type: string
+      fuzzer_name:
+        type: string
+      memory_gb:
+        type: integer
+      oss_fuzz_tarball_url:
+        type: string
+      override_cache:
+        type: boolean
+      patch_b64:
+        format: base64
+        type: string
+      patch_hash:
+        description: Lower priority than b64
+        type: string
+      project_name:
+        type: string
+      repo_tarball_url:
+        type: string
+      sanitizer:
+        type: string
+      skip_patch_tests:
+        type: boolean
+      task_id:
+        format: uuid
+        type: string
+      testcase_b64:
+        format: base64
+        type: string
+      testcase_hash:
+        description: Lower priority than b64
+        type: string
+    required:
+      - architecture
+      - cache_key
+      - override_cache
+    type: object
+  types.JobArtifact:
+    properties:
+      archived_file:
+        $ref: "#/definitions/types.ArchivedFile"
+      blob:
+        $ref: "#/definitions/types.Blob"
+      context:
+        $ref: "#/definitions/types.ResultContext"
+      filename:
+        type: string
+    type: object
+  types.JobResponse:
+    properties:
+      artifacts:
+        items:
+          $ref: "#/definitions/types.JobArtifact"
+        type: array
+      job_id:
+        type: string
+      results:
+        items:
+          $ref: "#/definitions/types.JobResult"
+        type: array
+      status:
+        $ref: "#/definitions/types.SubmissionStatus"
+    required:
+      - job_id
+      - status
+    type: object
+  types.JobResult:
+    properties:
+      cmd:
+        items:
+          type: string
+        type: array
+      context:
+        $ref: "#/definitions/types.ResultContext"
+      return_code:
+        type: integer
+      stderr_blob:
+        $ref: "#/definitions/types.Blob"
+      stdout_blob:
+        $ref: "#/definitions/types.Blob"
+    type: object
+  types.ResultContext:
+    enum:
+      - pov_test_head_repo
+      - delta_test_base_repo
+    type: string
+    x-enum-varnames:
+      - ResultCtxHeadRepoTest
+      - ResultCtxBaseRepoTest
+  types.SubmissionStatus:
+    enum:
+      - accepted
+      - passed
+      - failed
+      - deadline_exceeded
+      - errored
+      - inconclusive
+    type: string
+    x-enum-comments:
+      SubmissionStatusAccepted: Successfully submitted
+      SubmissionStatusDeadlineExceeded:
+        Task deadline exceeded. All submissions marked
+        accepted before the deadline will be evaluated.
+      SubmissionStatusErrored: Server side error when testing submission
+      SubmissionStatusFailed: Submission failed testing
+      SubmissionStatusInconclusive:
+        Test continued running beyond timeout and will
+        be manually reviewed after the round.  As a result this status is inconclusive.
+      SubmissionStatusPassed: Successfully evaluated submission
+    x-enum-varnames:
+      - SubmissionStatusAccepted
+      - SubmissionStatusPassed
+      - SubmissionStatusFailed
+      - SubmissionStatusDeadlineExceeded
+      - SubmissionStatusErrored
+      - SubmissionStatusInconclusive
+info:
+  contact: {}
+  title: Jobrunner API
+  version: 1.0.0
+paths:
+  /jobrunner/job/:
+    post:
+      consumes:
+        - application/json
+      description:
+        submit a PoV, Patch, or combination for testing.  Submitting both
+        tests a PoV against a Patch to determine if the PoV crashes after the patch
+        is applied.
+      parameters:
+        - description: Submission body
+          in: body
+          name: payload
+          required: true
+          schema:
+            $ref: "#/definitions/types.JobArgs"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/types.JobResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/types.Error"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/types.Error"
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/types.Error"
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/types.Error"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/types.Error"
+      security:
+        - BasicAuth: []
+      summary: Run Test Job
+      tags:
+        - jobrunner
+  /jobrunner/job/{job_id}:
+    post:
+      consumes:
+        - application/json
+      description: Get the current status & any available results for a job
+      parameters:
+        - description: Job ID
+          format: uuid
+          in: path
+          name: job_id
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/types.JobResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/types.Error"
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/types.Error"
+        "404":
+          description: Not Found
+          schema:
+            $ref: "#/definitions/types.Error"
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/types.Error"
+      security:
+        - BasicAuth: []
+      summary: Get Job Results
+      tags:
+        - jobrunner
+securityDefinitions:
+  BasicAuth:
+    type: basic
+swagger: "2.0"

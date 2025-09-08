@@ -1,0 +1,86 @@
+teams:
+    - id: 726d5726-9d3d-4be6-9940-87d8b1632a49
+      note: team example - just called competitionapi
+      api_key:
+        token: competitionapi
+        active: true
+        permissions:
+            crs: true
+            job_runner: true
+      crs:
+        task_me: true
+        url: https://fake.crs.com
+        api_key_id: abfbdfeb-96f7-4919-8349-b048bf7babfb
+        api_key_token: competitionapi
+azure:
+    storage_account:
+        key: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw== # Azurite default connection key, not sensitive
+        name: devstoreaccount1
+        containers:
+            url: http://192.168.1.100:30083/devstoreaccount1
+            submissions: submissions
+            sources: sources
+            artifacts: artifacts
+        queues:
+            url: http://azurite:10001/devstoreaccount1
+            results: results
+postgres:
+    host: postgres # to connect to devenv process competitionapi
+    password: competitionapi
+    database: competitionapi
+    user: competitionapi
+round_id: local-dev-testing
+k8s:
+    namespace: competition-api-dev-local
+    in_cluster: true
+    eval_node_assignment:
+        node_affinity_label:
+            key: aixcc.tech/api-workload
+            value: devservices
+        toleration:
+            key: aixcc.tech/api-workload
+            value: devservices
+    broadcast_node_assignment:
+        node_affinity_label:
+            key: aixcc.tech/api-workload
+            value: devservices
+        toleration:
+            key: aixcc.tech/api-workload
+            value: devservices
+    scoring_node_assignment:
+        node_affinity_label:
+            key: aixcc.tech/api-workload
+            value: devservices
+        toleration:
+            key: aixcc.tech/api-workload
+            value: devservices
+logging:
+    app:
+        level: -4
+    use_otlp: false
+
+github:
+    webhook_secret: aaaaaa
+    app_id: 1111111
+    app_key_path: /etc/competitionapi/github-app-key.pem
+s3_archive:
+    enabled: true
+    endpoint: minio:9000
+    access_key_id: minio
+    secret_access_key: minio123
+    bucket_name: afc-archive-dev-api-artifacts-local
+    ssl_enabled: false
+ratelimit:
+    redis_host: redis
+    global_per_minute: 1000
+    submit_per_minute: 200
+    fail_open: false
+temp_dir: /data
+graceful_shutdown_secs: 120
+generate:
+    enabled: true
+    installation_id: 1111111
+    challenges: []
+ignored_repos:
+    - https://github.com/aixcc-afc/round-integration-testing-integration-test.git
+version: dev-local

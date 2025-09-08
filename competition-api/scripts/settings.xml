@@ -1,0 +1,10 @@
+<settings>
+  <mirrors>
+    <mirror>
+      <id>aixcc-maven-central</id>
+      <name>AIxCC Maven Central mirror</name>
+      <url>http://artifactory-oss-artifactory-nginx.artifactory-large/artifactory/aixcc/maven2/</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>

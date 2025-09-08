@@ -1,0 +1,53 @@
+---
+name: Lint
+on:
+  pull_request:
+    branches:
+      - main
+permissions: read-all
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Lint
+        uses: super-linter/super-linter/slim@v7.4.0
+        env:
+          DEFAULT_BRANCH: "origin/main"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Kubeconform does not know about CRDs, so we have to ignore missing schemas
+          KUBERNETES_KUBECONFORM_OPTIONS: "--ignore-missing-schemas --ignore-filename-pattern 'patch_.*.yaml'"
+          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_ENV: false
+          VALIDATE_JSCPD: false
+          VALIDATE_CHECKOV: false
+          VALIDATE_GO: false
+          VALIDATE_GO_MODULES: false
+  lint_go:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Nix
+        uses: cachix/install-nix-action@v26
+      - name: Setup devenv Cache
+        uses: cachix/cachix-action@v14
+        with:
+          name: devenv
+      - name: Install devenv.sh
+        run: nix profile install nixpkgs#devenv
+      - name: Lint
+        shell: devenv shell bash -- -e {0}
+        run: |
+          lint_go

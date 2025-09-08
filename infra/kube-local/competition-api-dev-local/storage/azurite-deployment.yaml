@@ -1,0 +1,58 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azurite
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: azurite } }
+  template:
+    metadata:
+      labels: { app: azurite }
+    spec:
+      containers:
+        - name: azurite
+          image: mcr.microsoft.com/azure-storage/azurite:3.34.0 # Latest
+          args:
+            [
+              "azurite",
+              "--loose",
+              "--blobHost",
+              "0.0.0.0",
+              "--queueHost",
+              "0.0.0.0",
+              "--tableHost",
+              "0.0.0.0",
+            ]
+          ports:
+            - containerPort: 10000 # blob
+              name: blob
+            - containerPort: 10001 # queue
+            - containerPort: 10002 # table
+          volumeMounts:
+            - name: data
+              mountPath: /data
+        - name: azurite-bootstrap
+          image: mcr.microsoft.com/azure-cli
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              # wait for Azurite queue service to accept TCP
+              CONN_QUEUE="DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://localhost:10001/devstoreaccount1;"
+              CONN_BLOB="DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;"
+
+              until az storage queue list --connection-string "$CONN_QUEUE" --output none >/dev/null 2>&1; do
+                sleep 1
+              done
+              echo "[bootstrap] creating 'results' queue …"
+              az storage queue create --name results --connection-string $CONN_QUEUE
+              az storage container create --name submissions --connection-string $CONN_BLOB
+              az storage container create --name sources --connection-string $CONN_BLOB
+              az storage container create --name artifacts --connection-string $CONN_BLOB
+              echo "[bootstrap] done -- sleeping forever so Pod stays healthy"
+              tail -f /dev/null
+      volumes:
+        - name: data
+          emptyDir: {}
