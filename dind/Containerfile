@@ -1,0 +1,8 @@
+FROM docker.io/docker:27.3-dind
+
+WORKDIR /app
+EXPOSE 2375
+
+COPY ./dind/images.tar.gz images.tar.gz
+
+ENTRYPOINT [ "dockerd-entrypoint.sh" ]

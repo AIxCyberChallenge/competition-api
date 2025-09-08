@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16.4-alpine
+          envFrom:
+            - secretRef:
+                name: pg-secret
+          env:
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: md5
+          ports:
+            - name: pg
+              containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "competitionapi"] }
+            initialDelaySeconds: 5
+            timeoutSeconds: 2
+      volumes:
+        - name: data
+          emptyDir: {}

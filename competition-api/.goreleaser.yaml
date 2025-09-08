@@ -1,0 +1,23 @@
+project_name: competition-api
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: "identifier"
+    main: "./cmd/identifier"
+    binary: "identifier"
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+
+release:
+  disable: true

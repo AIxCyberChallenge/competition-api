@@ -1,0 +1,55 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-bucket-init
+spec:
+  backoffLimit: 6
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: minio/mc:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MINIO_ENDPOINT
+              value: "http://minio:9000"
+            - name: MINIO_ROOT_USER
+              value: "minio"
+            - name: MINIO_ROOT_PASSWORD
+              value: "minio123"
+            - name: MINIO_BUCKETS
+              value: "afc-archive-dev-api-artifacts-local"
+            - name: MINIO_BUCKET_POLICY
+              value: ""
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -euo pipefail
+
+              alias="k8sminio"
+              echo "Waiting for MinIO at ${MINIO_ENDPOINT} ..."
+              until mc alias set "${alias}" "${MINIO_ENDPOINT}" "${MINIO_ROOT_USER}" "${MINIO_ROOT_PASSWORD}" >/dev/null 2>&1 \
+                    && mc ls "${alias}" >/dev/null 2>&1; do
+                echo "MinIO not ready yet, retrying..."
+                sleep 3
+              done
+
+              # Split on commas without external tools
+              IFS=,; set -- ${MINIO_BUCKETS:-my-bucket}
+              for b in "$@"; do
+                # Trim leading spaces
+                while [ "${b# }" != "$b" ]; do b="${b# }"; done
+                # Trim trailing spaces
+                while [ "${b% }" != "$b" ]; do b="${b% }"; done
+                [ -z "$b" ] && continue
+
+                mc mb --ignore-existing "${alias}/${b}"
+                if [ "${MINIO_BUCKET_POLICY:-}" = "public" ]; then
+                  mc anonymous set download "${alias}/${b}"
+                fi
+              done
+
+              echo "Bucket initialization complete."

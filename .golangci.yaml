@@ -1,0 +1,135 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    # default linters
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    # end default linters
+    - goconst
+    - gocritic
+    - gosec
+    - revive
+    - spancheck
+    - unconvert
+    - copyloopvar
+    - testifylint # adhere to stretchr packages best practices
+    - whitespace # cleanup leading & trailing empty lines
+    - tagliatelle # enforce consistent tag format
+    - nolintlint # ensure nolint directives have an explanation
+    - ireturn # enforce "accept interfaces, return types" idiom. Typically makes code more testable
+    # TODO: enable the following linters
+    # - gocyclo
+  settings:
+    errcheck:
+      check-blank: true
+    gocyclo:
+      min-complexity: 15
+    govet:
+      enable-all: true
+    nolintlint:
+      require-explanation: true
+    revive:
+      enable-all-rules: true
+      rules:
+        - name: add-constant # prevent unnecessary string/int lints for defining a constant
+          disabled: true
+        - name: confusing-results # encourages naming results and, therefore, naked returns
+          disabled: true
+        - name: enforce-switch-style
+          arguments: ["allowNoDefault"] # don't require a default case always be present
+        - name: get-return # High chance of false positive; assumes func/method starting with `Get` should return something
+          disabled: true
+        - name: unhandled-error # handled by errcheck linter
+          disabled: true
+        - name: max-public-structs # overly-opinionated rule
+          disabled: true
+        - name: var-naming
+          arguments:
+            - ["ID"] # AllowList
+            - ["VM"] # DenyList
+            - - skip-package-name-checks: true
+        - name: line-length-limit # handled by golines formatter; prevent false-positive lints
+          disabled: true
+          # TODO: Enabled the following one at at time and fix lint errors
+        - name: confusing-naming
+          disabled: true
+        - name: argument-limit
+          disabled: true
+        - name: cognitive-complexity
+          disabled: true
+        - name: cyclomatic
+          disabled: true
+        - name: function-length
+          disabled: true
+        - name: flag-parameter
+          disabled: true
+    spancheck:
+      checks:
+        - end
+        - record-error
+        - set-status
+    staticcheck:
+      checks: ["all"]
+    tagliatelle:
+      case:
+        rules:
+          json: snake
+          yaml: snake
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - dupl
+          - goconst
+          - gosec
+        path: _test\.go
+      - linters:
+          - revive
+        path: competition-api/cmd/server/internal/migrations
+        text: ^exported function .+ should have comment or be unexported
+      - linters:
+          - revive
+        text: "import-shadowing: The name '(path|url)' shadows an import name"
+      - linters:
+          - revive
+        text: 'struct-tag: unknown option "(omitempty|optional)" in validate tag'
+      - linters:
+          - govet
+        text: 'shadow: declaration of "err" shadows declaration.*'
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - golines
+    - gofmt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/aixcyberchallenge/competition-api)
+      custom-order: true
+    golines:
+      max-len: 100
+    gofmt:
+      rewrite-rules:
+        - pattern: "interface{}"
+          replacement: "any"
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

@@ -1,0 +1,40 @@
+diff --git a/pdfbox/src/main/java/org/apache/pdfbox/pdmodel/PDPageTree.java b/pdfbox/src/main/java/org/apache/pdfbox/pdmodel/PDPageTree.java
+index 717baeaa3..0abda3c88 100644
+--- a/pdfbox/src/main/java/org/apache/pdfbox/pdmodel/PDPageTree.java
++++ b/pdfbox/src/main/java/org/apache/pdfbox/pdmodel/PDPageTree.java
+@@ -97,7 +97,9 @@ public class PDPageTree implements COSObjectable, Iterable<PDPage>
+         }
+         this.document = document;
+     }
+-
++    public static COSBase getInheritableAttribute(COSDictionary node, COSName key) {
++        return getInheritableAttribute(node, key, new HashSet<>());
++    }
+     /**
+      * Returns the given attribute, inheriting from parent tree nodes if necessary.
+      *
+@@ -105,8 +107,14 @@ public class PDPageTree implements COSObjectable, Iterable<PDPage>
+      * @param key the key to look up
+      * @return COS value for the given key
+      */
+-    public static COSBase getInheritableAttribute(COSDictionary node, COSName key)
++    public static COSBase getInheritableAttribute(COSDictionary node, COSName key, Set<COSDictionary> visited)
+     {
++        if (node == null || visited.contains(node)) {
++            return null;
++        }
++
++        visited.add(node);
++
+         COSBase value = node.getDictionaryObject(key);
+         if (value != null)
+         {
+@@ -115,7 +123,7 @@ public class PDPageTree implements COSObjectable, Iterable<PDPage>
+         COSDictionary parent = node.getCOSDictionary(COSName.PARENT, COSName.P);
+         if (parent != null && COSName.PAGES.equals(parent.getCOSName(COSName.TYPE)))
+         {
+-            return getInheritableAttribute(parent, key);
++            return getInheritableAttribute(parent, key, visited);
+         }
+ 
+         return null;
