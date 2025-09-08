@@ -1,0 +1,21 @@
+# Devenv
+.devenv*
+devenv.local.nix
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
+
+.DS_Store
+
+codebook.toml
+
+competition-api/dist
+
+dind/images.tar.gz
+
+.kind
+
+infra/kube-local/competition-api-dev-local/sops/config.yaml

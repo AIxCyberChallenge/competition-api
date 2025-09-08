@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: competition-api-dev-local
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - deployment-crs-status.yaml
+  - service.yaml
+  - serviceaccount.yaml
+  - redis.yaml
+  - postgres/postgres-secret.yaml
+  - postgres/postgres-svc.yaml
+  - postgres/postgres-deployment.yaml
+  - storage/azurite-deployment.yaml
+  - storage/azurite-svc.yaml
+  - storage/minio-deployment.yaml
+secretGenerator:
+  - name: config
+    files:
+      - sops/config.yaml
+    options:
+      disableNameSuffixHash: true
+  - name: ghappkey
+    files:
+      - sops/github-app-key.pem
+images:
+  - name: ghcr.io/aixcyberchallenge/competition-api/competition-api
+    newName: kind-registry:5000/competition-api
+    newTag: latest
+  - name: ghcr.io/aixcyberchallenge/competition-api/docker
+    newName: kind-registry:5000/docker
+    newTag: latest
+replacements:
+  - source:
+      kind: Deployment
+      name: competition-api-dev-local
+      fieldPath: spec.template.spec.containers.[name=competition-api-dev-local].image
+    targets:
+      - select:
+          kind: Deployment
+          name: competition-api-dev-local
+        fieldPaths:
+          - spec.template.spec.containers.[name=competition-api-dev-local].env.[name=COMPETITIONAPI_K8S_JOB_IMAGE].value

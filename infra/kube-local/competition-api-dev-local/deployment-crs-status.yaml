@@ -1,0 +1,41 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: competition-api-dev-local-crs-status
+  labels:
+    app: competition-api-dev-local-crs-status
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: competition-api-dev-local-crs-status
+  template:
+    metadata:
+      labels:
+        app: competition-api-dev-local-crs-status
+    spec:
+      containers:
+        - name: crs-status
+          image: ghcr.io/aixcyberchallenge/competition-api/competition-api
+          imagePullPolicy: IfNotPresent
+          args:
+            - crs-status
+          resources:
+            requests:
+              memory: 512Mi
+          volumeMounts:
+            - name: config
+              subPath: config.yaml
+              mountPath: /etc/competition-api/competition-api.yaml
+          env:
+            - name: COMPETTIONAPI_K8S_JOB_IMAGE
+              value: not-needed
+            - name: COMPETTIONAPI_K8S_DIND_IMAGE
+              value: not-needed
+            - name: COMPETTIONAPI_CACHE_KEY
+              value: "abc123"
+      volumes:
+        - name: config
+          secret:
+            secretName: config

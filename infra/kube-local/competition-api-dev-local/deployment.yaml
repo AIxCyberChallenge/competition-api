@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: competition-api-dev-local
+  labels:
+    app: competition-api-dev-local
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: competition-api-dev-local
+  template:
+    metadata:
+      labels:
+        app: competition-api-dev-local
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
+      terminationGracePeriodSeconds: 130
+      serviceAccountName: competitionapi
+      containers:
+        - name: competition-api-dev-local
+          image: ghcr.io/aixcyberchallenge/competition-api/competition-api
+          imagePullPolicy: IfNotPresent
+          args:
+            - server
+          resources:
+            requests:
+              memory: 2Gi
+          ports:
+            - name: http
+              containerPort: 1323
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 1323
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: config
+              subPath: config.yaml
+              mountPath: /etc/competition-api/competition-api.yaml
+            - name: ghappkey
+              subPath: github-app-key.pem
+              mountPath: /etc/competition-api/github-app-key.pem
+            - name: data
+              mountPath: /data
+          env:
+            - name: COMPETITIONAPI_K8S_JOB_IMAGE
+              value: replaced-by-kustomize
+            - name: COMPETITIONAPI_K8S_DIND_IMAGE
+              value: kind-registry:5000/docker:latest
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector-opentelemetry-collector.otel-collector:4317"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=competitionapi,service.namespace=competitionapi,deployment.environment=dev-local"
+            - name: COMPETITIONAPI_CACHE_KEY
+              value: "abc123"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+      volumes:
+        - name: config
+          secret:
+            secretName: config
+        - name: ghappkey
+          secret:
+            secretName: ghappkey
+        - name: data
+          emptyDir: {}
